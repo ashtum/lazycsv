@@ -1,13 +1,16 @@
 [![Build Status](https://travis-ci.org/ashtum/lazycsv.svg?branch=master)](https://travis-ci.org/ashtum/lazycsv)
 [![Language grade: C/C++](https://img.shields.io/lgtm/grade/cpp/g/ashtum/lazycsv.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/ashtum/lazycsv/context:cpp)
+
 ![lazycsv](img/logo.png)
 
 ## What's the lazycsv?
 **lazycsv** is a c++17, posix-compliant, single-header library for reading and parsing csv files.  
-It's fast and lightweight and does not allocate any memory in constructor or while parsing. It parses each row and cell just on demand on each iteration, that's why it's called lazy.
+It's fast and lightweight and does not allocate any memory in the constructor or while parsing. It parses each row and cell just on demand on each iteration, that's why it's called lazy.
 
 ### Quick usage
+
 The latest version of the single header can be downloaded from [`include/lazycsv.hpp`](include/lazycsv.hpp).
+
 ```c++
 #include <lazycsv.hpp>
 
@@ -21,12 +24,15 @@ int main()
 }
 ```
 
-### Performance notes
-Parser doesn't keep state of already parsed rows and cells, iterating through them for the second time, has the same cost. This is true with `cells()` member function too, geting all needed cells by a single call is recommended.  
-If it's needed to return to already parsed rows and cells, they can be stored in a container (they are lightweight views).
+### Performance note
+
+Parser doesn't keep state of already parsed rows and cells, iterating through them always associated with parsing cost. This is true with `cells()` member function too, geting all needed cells by a single call is recommended.  
+If it's necessary to return to the already parsed rows and cells, they can be stored in a container and used later without being parsed again (they are view objects and efficient to copy).
 
 ### Features
-Returned `std::string_view` by `raw()` and `trimed()` member functions are valid as long as parser object is alive:
+
+Returned `std::string_view` by `raw()` and `trimed()` member functions are valid as long as the parser object is alive:
+
 ```c++
 std::vector<std::string_view> cities;
 for (const auto row : parser)
@@ -37,6 +43,7 @@ for (const auto row : parser)
 ```
 
 Iterate through rows and cells:
+
 ```c++
 for (const auto row : parser)
 {
@@ -47,6 +54,7 @@ for (const auto row : parser)
 ```
 
 Get header row and iterate through its cells:
+
 ```c++
 auto header = parser.header();
 for (const auto cell : header)
@@ -55,11 +63,13 @@ for (const auto cell : header)
 ```
 
 Find column index by its name:
+
 ```c++
 auto city_index = parser.index_of("city");
 ```
 
-`row` and `cell` are lightweight views on actual data in parser object, they can be stored and used as long as parser object is alive:
+`row` and `cell` are view objects on actual data in the parser object, they can be stored and used as long as the parser object is alive:
+
 ```c++
 std::vector<lazycsv::parser<>::row> desired_rows;
 std::vector<lazycsv::parser<>::cell> desired_cells;
@@ -75,7 +85,8 @@ static_assert(sizeof(lazycsv::parser<>::row) == 2 * sizeof(void*));  // i'm ligh
 static_assert(sizeof(lazycsv::parser<>::cell) == 2 * sizeof(void*)); // i'm lightweight too
 ```
 
-Parser is customizable with template parameters:
+Parser is customizable with the template parameters:
+
 ```c++
 lazycsv::parser<
     lazycsv::mmap_source,           /* source type of csv data */
@@ -86,14 +97,17 @@ lazycsv::parser<
 ```
 
 By default parser uses `lazycsv::mmap_source` as its source of data, but it's possible to be used with any other types of contiguous containers:
+
 ```c++
 std::string csv_data{ "name,lastname,age\nPeter,Griffin,45\nchris,Griffin,14\n" };
 
 lazycsv::parser<std::string_view> parser_a{ csv_data };
 lazycsv::parser<std::string> parser_b{ csv_data };
 ```
+
 ## TODO
-*   Add benchmarks
-*   Add parser for integral and floating point cells
-*   Add policy for quoting
-*   Wrapping it for python
+
+* Add benchmarks
+* Add parser for integral and floating point cells
+* Add policy for quoting
+* Wrapping it for python
