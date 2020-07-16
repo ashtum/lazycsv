@@ -1,0 +1,48 @@
+FormatStyle:        'file'
+Checks:             '*,
+                    -cert-dcl21-cpp,
+                    -cppcoreguidelines-pro-type-vararg,
+                    -hicpp-vararg,
+                    -bugprone-exception-escape,
+                    -fuchsia-default-arguments-declarations,
+                    -misc-non-private-member-variables-in-classes,
+                    -modernize-use-nodiscard,
+                    -cppcoreguidelines-avoid-magic-numbers,
+                    -readability-magic-numbers,
+                    -modernize-use-trailing-return-type,
+                    -fuchsia-default-arguments-calls,
+                    -google-readability-braces-around-statements,
+                    -hicpp-braces-around-statements,
+                    -readability-braces-around-statements,
+                    -readability-implicit-bool-conversion,
+                    -llvm-header-guard,
+                    -cppcoreguidelines-pro-bounds-pointer-arithmetic,
+                    -fuchsia-overloaded-operator,
+                    -hicpp-signed-bitwise,
+                    -readability-named-parameter,
+                    -android-cloexec-dup,
+                    -cppcoreguidelines-pro-bounds-constant-array-index,
+                    -readability-static-accessed-through-instance'
+CheckOptions:
+  - key:            readability-identifier-naming.NamespaceCase
+    value:          lower_case
+  - key:            readability-identifier-naming.ClassCase
+    value:          lower_case
+  - key:            readability-identifier-naming.StructCase
+    value:          lower_case
+  - key:            readability-identifier-naming.FunctionCase
+    value:          lower_case
+  - key:            readability-identifier-naming.UnionCase
+    value:          lower_case
+  - key:            readability-identifier-naming.EnumCase
+    value:          lower_case
+  - key:            readability-identifier-naming.ClassMemberCase
+    value:          lower_case
+  - key:            readability-identifier-naming.PrivateMemberSuffix
+    value:          _
+  - key:            readability-identifier-naming.ProtectedMemberSuffix
+    value:          _
+  - key:            readability-identifier-naming.VariableCase
+    value:          lower_case
+  - key:            readability-identifier-naming.GlobalConstantCase
+    value:          lower_case

@@ -1,0 +1,10 @@
+BasedOnStyle: Mozilla
+ConstructorInitializerIndentWidth: 4
+ContinuationIndentWidth: 4
+IndentWidth: 4
+ColumnLimit: 140
+AlwaysBreakAfterDefinitionReturnType: None
+AlwaysBreakAfterReturnType: None
+AllowShortFunctionsOnASingleLine: false
+BreakBeforeBraces: Allman
+AlignAfterOpenBracket: AlwaysBreak
