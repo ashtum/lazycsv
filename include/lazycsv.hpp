@@ -13,7 +13,7 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
-
+#include "implementation/find.hpp"
 namespace lazycsv
 {
 namespace detail
@@ -33,7 +33,7 @@ struct chunk_cells
 {
     static auto chunk(const char* begin, const char* dead_end)
     {
-        return std::find(begin, dead_end, delimiter);
+        return detail::find( begin, dead_end, delimiter, Quotation_Policy::SIMD<'"'>{});
     }
 };
 
