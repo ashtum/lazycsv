@@ -5,7 +5,7 @@
 #include <immintrin.h>
 #include <iostream>
 #include <limits>
-#include <string_view>
+//#include <string_view>
 #include <type_traits>
 #include <wmmintrin.h>
 namespace lazycsv
@@ -27,10 +27,10 @@ namespace debug_output
 {
 void print_bytes_in_int(int toprint);
 void print_bytes_in_64int(uint64_t toprint);
-#define MPRINT(X)                                                                                                                          \
-    std::cout << #X << "\t";                                                                                                               \
-    debug_output::print_bytes_in_64int(X);
-#define MPRINT2(X) std::cout << #X << "\t" << X << '\n';
+#define MPRINT(X)
+//    std::cout << #X << "\t";
+// debug_output::print_bytes_in_64int(X);
+#define MPRINT2(X) // std::cout << #X << "\t" << X << '\n';
 }
 
 template<class InputIt, class T, class U = Quotation_Policy::None>
@@ -65,10 +65,7 @@ InputIt find(InputIt first, InputIt last, const char value, U)
 }
 const char* find__simd(const char* first, const char* last, const char delimter, const char quotetation);
 template<char quotetation>
-[[gnu::target("avx2,pclmul")]] const char*
-find(const char* first, const char* last, const char delimter, Quotation_Policy::SIMD<quotetation>) {
-    return find__simd(first, last, delimter, quotetation);
-} const char* find__simd(const char* first, const char* last, const char delimter, const char quotetation)
+const char* find(const char* first, const char* last, const char delimter, Quotation_Policy::SIMD<quotetation>)
 {
     if (first == last)
         return last;
@@ -84,7 +81,7 @@ find(const char* first, const char* last, const char delimter, Quotation_Policy:
         size_t distance = static_cast<int>(std::distance(itter, last));
         size_t length = std::min((size_t)64, distance);
         std::memcpy(&array, itter, std::min(length, distance));
-        std::cout << "input \t" << std::string_view{ array.begin(), 64 } << '\n';
+        // std::cout << "input \t" << std::string_view{ array.begin(), 64 } << '\n';
         // input 	"String, literal "", "of3 "2"   "chars """ mark. but longer  """
         auto evenBits = std::bitset<64>(0x5555555555555555);
         uint64_t B = createBitmask(array, quotetation);
