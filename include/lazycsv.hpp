@@ -8,12 +8,12 @@
 #include <string>
 #include <string_view>
 
+#include "implementation/find.hpp"
 #include <errno.h>
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include "implementation/find.hpp"
 namespace lazycsv
 {
 namespace detail
@@ -33,7 +33,7 @@ struct chunk_cells
 {
     static auto chunk(const char* begin, const char* dead_end)
     {
-        return detail::find( begin, dead_end, delimiter, Quotation_Policy::SIMD<'"'>{});
+        return detail::find(begin, dead_end, delimiter, Quotation_Policy::SIMD<'"'>{});
     }
 };
 
@@ -88,7 +88,7 @@ class fw_iterator
         return T{ begin_, end_ };
     }
 
-    auto operator->() const
+    auto operator-> () const
     {
         return T{ begin_, end_ };
     }
@@ -271,7 +271,7 @@ class parser
         {
         }
 
-        const auto* operator->() const
+        const auto* operator-> () const
         {
             return this;
         }
@@ -304,7 +304,7 @@ class parser
         {
         }
 
-        const auto* operator->() const
+        const auto* operator-> () const
         {
             return this;
         }
