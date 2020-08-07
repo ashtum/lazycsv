@@ -4,8 +4,13 @@
 ![lazycsv](img/logo.png)
 
 ## What's the lazycsv?
+
 **lazycsv** is a c++17, posix-compliant, single-header library for reading and parsing csv files.  
 It's fast and lightweight and does not allocate any memory in the constructor or while parsing. It parses each row and cell just on demand on each iteration, that's why it's called lazy.
+
+### Note
+
+This parser does not handle quoted cells yet.
 
 ### Quick usage
 
