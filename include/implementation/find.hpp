@@ -33,13 +33,20 @@ namespace debug_output
 void print_bytes_in_int(int toprint);
 void print_bytes_in_64int(uint64_t toprint);
 /// printing debug macros
+
 static std::ios_base::fmtflags f( std::cout.flags() ); 
+//#define BOOL_PRINT
+#ifdef BOOL_PRINT
 #define MPRINT(X) \
     std::cout <<  std::left << std::setw(30) ;              \
     std::cout << #X;                              \
     debug_output::print_bytes_in_64int(X); \
     std::cout.flags( detail::debug_output::f );
 #define MPRINT2(X) std::cout << #X << "\t" << X << '\n';
+#else
+#define MPRINT(X) ;
+#define MPRINT2(X) ;
+#endif
 }
 template<class pointer, class... Args>
 [[gnu::target("avx2")]] std::array<uint64_t, sizeof...(Args)> createBitmask(pointer first, Args... args)
@@ -112,9 +119,11 @@ std::tuple<const char*, const char*> chunker<Policy>::find_I(Quotation_Policy::S
         throw last;
     using std::cout;
     using std::ptrdiff_t;
+    #ifdef BOOL_PRINT
     cout << "first,last  " << std::hex << (ptrdiff_t)first << " : " << (ptrdiff_t)last << '\n' << std::dec;
     cout << "size is " << last - first << '\n';
     cout << std::endl;
+    #endif
     if (first == last)
         return std::make_tuple(last, last);
     //cout << "find called with" << std::string_view(first, last - first) << '\n';
@@ -187,9 +196,11 @@ std::tuple<const char*, const char*> chunker<Policy>::find_I(Quotation_Policy::S
     {
         MPRINT2(IsQuotedBlock);
         size_t distance = static_cast<int>(std::distance(itter, last));
+        #ifdef BOOL_PRINT
         auto s = std::string_view(itter, 64) ;
         std::cout <<std::left << std::setw(30) << "input " << s << '\n';
         std::cout.flags( detail::debug_output::f );
+        #endif
         // input 	"String, literal "", "of3 "2"   "chars """ mark. but longer  """
         auto evenBits = std::bitset<64>(0x5555555555555555);
         std::tie(quotetationMask, delimM, newLineMask) = unpack(createBitmask(itter, quotetation, delimter, newline));
@@ -261,17 +272,13 @@ std::tuple<const char*, const char*> chunker<Policy>::find_I(Quotation_Policy::S
         MPRINT(merged);
         std::bitset<64> set{newLineMask};
         MPRINT(newLineMask);
-        cout << "callback\t";
         l(merged, [=](int i){
-            cout << set[i]<< '\t';
             saveInBuffer(itter + i, set[i]);
         }); 
-        std::cout << std::endl;
         res = ReturnLambda(itter);
         if (res)
             return res.value();
         //loop_count++;
-        std::cout << std::endl;
     } while (std::advance(itter, 64), itter < last);
 
     return std::make_tuple(std::min(itter + offset, last), last);

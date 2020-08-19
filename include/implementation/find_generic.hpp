@@ -250,8 +250,9 @@ std::tuple<T, T> chunker<Policy>::find_I(Quotation_Policy::Generic<TS...>, findM
 
     if (first >= last) [[unlikely]]
         return std::make_tuple(last, last);
-
+    #ifdef BOOL_PRINT
     std::cout << "find generic called with " << last - first << "chars in mode: " << findMode::name << '\n';
+    #endif 
     static constexpr char quotation = Policy::quotationMark;
     static constexpr char delim = Policy::delimiter;
     static constexpr char newline = Policy::line_ending;
@@ -264,9 +265,11 @@ std::tuple<T, T> chunker<Policy>::find_I(Quotation_Policy::Generic<TS...>, findM
         else
             this->carrybit1 = false;
         auto ret = std::min(firstDelim, FirstEndLIne);
+        #ifdef BOOL_PRINT
         std::cout << "generic returns \t " << std::string_view(first, ret - first) << "::::\n";
         std::cout << "carry set to \t " << this->carrybit1 << "::::\n";
         std::cout << "Quatoed Block\t " << this->IsQuotedBlock << "::::\n";
+        #endif
         return std::make_tuple(firstDelim, FirstEndLIne);
     };
 
