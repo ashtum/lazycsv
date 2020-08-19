@@ -2,3 +2,4 @@
 build/
 playground/
 benchmark/
+test/inputs/1500000 Sales Records.csv
