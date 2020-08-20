@@ -162,7 +162,7 @@ class chunker
         {
             return theArray.begin();
         }
-        inline auto size()
+        inline size_t size()
         {
             return std::distance(theArray.begin(), end());
         }
@@ -216,7 +216,7 @@ std::tuple<const char*, const char*> chunker<Policy>::find(U, findMode, const ch
             if (value == CharOffsetArray<>::InvalidBufferValue)
                 break;
             sum += value;
-            if (sum > first)
+            if (sum >= first)
             {
                 if constexpr (std::is_same<findMode, find_mode::find_delim>::value)
                     if (buffer.isDelim(i))
@@ -247,7 +247,11 @@ template<typename Policy>
 template<typename findMode, typename T, class... TS>
 std::tuple<T, T> chunker<Policy>::find_I(Quotation_Policy::Generic<TS...>, findMode, T first, T last)
 {
-
+    bool i = false;
+    if constexpr (std::is_same<find_mode::find_delim,findMode>::value)
+        int i =true;
+    if (i) 
+        i =false;
     if (first >= last) [[unlikely]]
         return std::make_tuple(last, last);
     #ifdef BOOL_PRINT
@@ -264,8 +268,8 @@ std::tuple<T, T> chunker<Policy>::find_I(Quotation_Policy::Generic<TS...>, findM
             this->carrybit1 = true;
         else
             this->carrybit1 = false;
-        auto ret = std::min(firstDelim, FirstEndLIne);
         #ifdef BOOL_PRINT
+        auto ret = std::min(firstDelim, FirstEndLIne);
         std::cout << "generic returns \t " << std::string_view(first, ret - first) << "::::\n";
         std::cout << "carry set to \t " << this->carrybit1 << "::::\n";
         std::cout << "Quatoed Block\t " << this->IsQuotedBlock << "::::\n";
@@ -292,20 +296,25 @@ std::tuple<T, T> chunker<Policy>::find_I(Quotation_Policy::Generic<TS...>, findM
                 if (first_deliminter == last)
                 {
                     if constexpr (std::is_same<findMode, find_mode::find_delim>::value)
+                    {
                         return Return(itterator, last);
+                    }
                     else
+                    {
                         first_deliminter = itterator;
+                    }
                 }
                 else
                 {
                     if constexpr (!std::is_same<findMode, find_mode::find_delim>::value)
                         saveInBuffer(itterator, false);
                 }
+            
 
         if (value == newline && this->IsQuotedBlock == false)
             return Return(first_deliminter, itterator);
     }
-    return Return(last, last);
+    return Return(first_deliminter, last);
 }
 
 template<class Policy = Quotation_Policy::None<>>
@@ -371,8 +380,7 @@ struct chunk_cells<Quotation_Policy::SIMD<TS...>>
     {
         // using mode = std::integral_constant<detail::chunker::find_mode ,detail::chunker::find_mode::find_both>;
         [[maybe_unused]] auto [cell_end, row_end] = state.find(Policy{}, find_mode::find_delim{}, begin, dead_end);
-        return cell_end;
-        return dead_end;
+        return std::min(cell_end, row_end);
     }
 
   private:

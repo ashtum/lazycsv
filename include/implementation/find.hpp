@@ -53,8 +53,6 @@ template<class pointer, class... Args>
 {
     __m256i _charvalues1 = _mm256_stream_load_si256((__m256i*)(first));
     __m256i _charvalues2 = _mm256_stream_load_si256((__m256i*)(first + 32));
-    if (*first == 's')
-        int i = 1+1;
     std::array<uint64_t, sizeof...(Args)> results{};
     size_t index = 0;
     for (auto&& value : { args... })
@@ -139,7 +137,7 @@ std::tuple<const char*, const char*> chunker<Policy>::find_I(Quotation_Policy::S
 
     const char* first_32Bit_aligned_pointer = First_32Bit_aligned_pointer(first, last, LengthOfStringNeededToEnableSimDinBytes);
     if (first_32Bit_aligned_pointer == nullptr)
-            return state.find_I(Quotation_Policy::Generic<TS...>{}, find_mode::find_both{}, first, last);
+            return state.find_I(Quotation_Policy::Generic<TS...>{}, findMode{}, first, last);
     
     /// chars to hold the result in
     auto first_deliminter = last;
@@ -195,7 +193,7 @@ std::tuple<const char*, const char*> chunker<Policy>::find_I(Quotation_Policy::S
     do
     {
         MPRINT2(IsQuotedBlock);
-        size_t distance = static_cast<int>(std::distance(itter, last));
+        //size_t distance = static_cast<int>(std::distance(itter, last));
         #ifdef BOOL_PRINT
         auto s = std::string_view(itter, 64) ;
         std::cout <<std::left << std::setw(30) << "input " << s << '\n';
@@ -281,7 +279,7 @@ std::tuple<const char*, const char*> chunker<Policy>::find_I(Quotation_Policy::S
         //loop_count++;
     } while (std::advance(itter, 64), itter < last);
 
-    return std::make_tuple(std::min(itter + offset, last), last);
+    return std::make_tuple(first_deliminter, first_endline);
 }
 namespace debug_output
 {
