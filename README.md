@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/ashtum/lazycsv.svg?branch=master)](https://travis-ci.org/ashtum/lazycsv)
+[![Build Status](https://travis-ci.com/ashtum/lazycsv.svg?branch=master)](https://travis-ci.com/ashtum/lazycsv)
 [![Language grade: C/C++](https://img.shields.io/lgtm/grade/cpp/g/ashtum/lazycsv.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/ashtum/lazycsv/context:cpp)
 
 ![lazycsv](img/logo.png)
