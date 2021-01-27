@@ -1,45 +1,28 @@
 #pragma once
-
 #include <algorithm>
 #include <array>
 #include <cstring>
+#include <cerrno>
+#include <fcntl.h>
 #include <iterator>
+#include <tuple>
 #include <stdexcept>
 #include <string>
 #include <string_view>
-
-#include <errno.h>
-#include <fcntl.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
-
+#include "implementation/find.hpp"
+#include "implementation/find_generic.hpp"
 namespace lazycsv
 {
+
 namespace detail
 {
-struct chunk_rows
-{
-    static auto chunk(const char* begin, const char* dead_end)
-    {
-        if (const auto* end = static_cast<const char*>(memchr(begin, '\n', dead_end - begin)))
-            return end;
-        return dead_end;
-    }
-};
-
-template<char delimiter>
-struct chunk_cells
-{
-    static auto chunk(const char* begin, const char* dead_end)
-    {
-        return std::find(begin, dead_end, delimiter);
-    }
-};
-
 template<class T, class chunk_policy>
 class fw_iterator
 {
+    chunk_policy chunker;
     const char* begin_;
     const char* end_;
     const char* dead_end_;
@@ -52,8 +35,9 @@ class fw_iterator
     using reference = T;
 
     fw_iterator(const char* begin, const char* dead_end)
-        : begin_(begin)
-        , end_(chunk_policy::chunk(begin, dead_end))
+        : chunker()
+        , begin_(begin)
+        , end_(chunker.chunk(begin, dead_end))
         , dead_end_(dead_end)
     {
     }
@@ -68,8 +52,8 @@ class fw_iterator
     auto& operator++()
     {
         begin_ = end_ + 1;
-        if (end_ != dead_end_) // check it is not the last chunk
-            end_ = chunk_policy::chunk(begin_, dead_end_);
+        if (end_ < dead_end_) // check it is not the last chunk
+            end_ = chunker.chunk(begin_, dead_end_);
         return *this;
     }
 
@@ -88,7 +72,7 @@ class fw_iterator
         return T{ begin_, end_ };
     }
 
-    auto operator->() const
+    auto operator-> () const
     {
         return T{ begin_, end_ };
     }
@@ -98,12 +82,6 @@ class fw_iterator
 struct error : std::runtime_error
 {
     using std::runtime_error::runtime_error;
-};
-
-template<char character>
-struct delimiter
-{
-    constexpr static char value = character;
 };
 
 template<bool flag>
@@ -212,6 +190,8 @@ template<
     class source = mmap_source,
     class has_header = has_header<true>,
     class delimiter = delimiter<','>,
+    class line_ending = line_ending<'\n'>,
+    class quotationMark = quotationMark<'"'>,
     class trim_policy = trim_chars<' ', '\t'>>
 class parser
 {
@@ -271,7 +251,7 @@ class parser
         {
         }
 
-        const auto* operator->() const
+        const auto* operator-> () const
         {
             return this;
         }
@@ -287,8 +267,8 @@ class parser
             return std::string_view(trimed_begin, trimed_end - trimed_begin);
         }
     };
-
-    using cell_iterator = detail::fw_iterator<cell, detail::chunk_cells<delimiter::value>>;
+    using Policy = Quotation_Policy::SIMD<quotationMark, delimiter, line_ending>;
+    using cell_iterator = detail::fw_iterator<cell, detail::chunk_cells<Policy>>;
 
     class row
     {
@@ -304,7 +284,7 @@ class parser
         {
         }
 
-        const auto* operator->() const
+        const auto* operator-> () const
         {
             return this;
         }
@@ -345,6 +325,6 @@ class parser
         }
     };
 
-    using row_iterator = detail::fw_iterator<row, detail::chunk_rows>;
+    using row_iterator = detail::fw_iterator<row, detail::chunk_rows<Policy>>;
 };
 } // namespace lazycsv
