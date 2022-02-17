@@ -121,3 +121,12 @@ TEST_CASE("custom delimiter")
     };
     check_rows(parser, { { "A0", "B0", "C0", "D0" }, { "A1", "B1", "C1", "D1" }, { "A2", "B2", "C2", "D2" }, { "A3", "B3", "C3", "D3" } });
 }
+
+TEST_CASE("quoted cells")
+{
+    lazycsv::parser<std::string, lazycsv::has_header<false>> parser{
+        "\"A0\"\"\",B0,C0,\n,\"B1,\",\"C1\",D1\n\"\",\",\",,\"D\"\"2\"\nA3, \"B3\" ,C3,\"\"\n"
+    };
+    check_rows(
+        parser, { { "A0\"\"", "B0", "C0", "" }, { "", "B1,", "C1", "D1" }, { "", ",", "", "D\"\"2" }, { "A3", "\"B3\"", "C3", "" } });
+}

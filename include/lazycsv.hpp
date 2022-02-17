@@ -28,12 +28,42 @@ struct chunk_rows
     }
 };
 
-template<char delimiter>
+template<char delimiter, char quote_char>
 struct chunk_cells
 {
     static auto chunk(const char* begin, const char* dead_end)
     {
-        return std::find(begin, dead_end, delimiter);
+        bool quote_opened = false;
+        const char* quote_location = {};
+
+        for (const auto* i = begin; i < dead_end; i++)
+        {
+            if (*i == delimiter && !quote_opened)
+                return i;
+
+            if (*i == quote_char)
+            {
+                if (!quote_opened)
+                {
+                    quote_opened = true;
+                    quote_location = i;
+                }
+                else
+                {
+                    quote_opened = false;
+                    bool escaped = (quote_location == i - 1);
+                    if (escaped)
+                    {
+                        quote_location = {};
+                    }
+                    else
+                    {
+                        quote_location = i;
+                    }
+                }
+            }
+        }
+        return dead_end;
     }
 };
 
@@ -106,6 +136,12 @@ struct delimiter
     constexpr static char value = character;
 };
 
+template<char character>
+struct quote_char
+{
+    constexpr static char value = character;
+};
+
 template<bool flag>
 struct has_header
 {
@@ -134,7 +170,7 @@ struct trim_chars
         while (trimed_begin != end && is_trim_char(*trimed_begin, Trim_chars...))
             ++trimed_begin;
         const char* trimed_end = end;
-        while (trimed_end != begin && is_trim_char(*(trimed_end - 1), Trim_chars...))
+        while (trimed_end != trimed_begin && is_trim_char(*(trimed_end - 1), Trim_chars...))
             --trimed_end;
         return std::pair{ trimed_begin, trimed_end };
     }
@@ -220,6 +256,7 @@ template<
     class source = mmap_source,
     class has_header = has_header<true>,
     class delimiter = delimiter<','>,
+    class quote_char = quote_char<'"'>,
     class trim_policy = trim_chars<' ', '\t'>>
 class parser
 {
@@ -274,8 +311,8 @@ class parser
         cell() = default;
 
         cell(const char* begin, const char* end)
-            : begin_(begin)
-            , end_(end)
+            : begin_(escape_leading_quote(begin, end))
+            , end_(escape_trailing_quote(begin, end))
         {
         }
 
@@ -294,9 +331,26 @@ class parser
             auto [trimed_begin, trimed_end] = trim_policy::trim(begin_, end_);
             return std::string_view(trimed_begin, trimed_end - trimed_begin);
         }
+
+      private:
+        static const auto* escape_leading_quote(const char* begin, const char* end)
+        {
+            if (end - begin >= 2 && *begin == quote_char::value && *(end - 1) == quote_char::value)
+                return begin + 1;
+
+            return begin;
+        }
+
+        static const auto* escape_trailing_quote(const char* begin, const char* end)
+        {
+            if (end - begin >= 2 && *begin == quote_char::value && *(end - 1) == quote_char::value)
+                return end - 1;
+
+            return end;
+        }
     };
 
-    using cell_iterator = detail::fw_iterator<cell, detail::chunk_cells<delimiter::value>>;
+    using cell_iterator = detail::fw_iterator<cell, detail::chunk_cells<delimiter::value, quote_char::value>>;
 
     class row
     {

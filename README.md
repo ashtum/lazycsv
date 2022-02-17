@@ -97,6 +97,7 @@ lazycsv::parser<
     lazycsv::mmap_source,           /* source type of csv data */
     lazycsv::has_header<true>,      /* first row is header or not */
     lazycsv::delimiter<','>,        /* column delimiter */
+    lazycsv::quote_char<'"'>,       /* quote character */
     lazycsv::trim_chars<' ', '\t'>> /* trim characters of cells */
     my_parser{ "data.csv" };
 ```
