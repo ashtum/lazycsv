@@ -2,13 +2,13 @@
 
 #include <algorithm>
 #include <array>
+#include <cerrno>
 #include <cstring>
 #include <iterator>
 #include <stdexcept>
 #include <string>
 #include <string_view>
 
-#include <errno.h>
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
@@ -142,7 +142,7 @@ struct trim_chars
 
 class mmap_source
 {
-    const char* data_;
+    const char* data_{ nullptr };
     size_t size_;
     int fd_;
 
@@ -153,20 +153,28 @@ class mmap_source
         if (fd_ == -1)
             throw error{ "can't open file, path: " + path + ", error:" + std::string{ std::strerror(errno) } };
 
-        struct stat sb;
+        struct stat sb = {};
         if (fstat(fd_, &sb) == -1)
         {
             close(fd_);
             throw error{ "can't get file size, error:" + std::string{ std::strerror(errno) } };
         }
 
-        data_ = static_cast<const char*>(mmap(nullptr, sb.st_size, PROT_READ, MAP_PRIVATE, fd_, 0U));
-        if (data_ == MAP_FAILED)
+        size_ = sb.st_size;
+
+        if (size_ > 0)
+        {
+            data_ = static_cast<const char*>(mmap(nullptr, size_, PROT_READ, MAP_PRIVATE, fd_, 0U));
+            if (data_ == MAP_FAILED)
+            {
+                close(fd_);
+                throw error{ "can't mmap file, error:" + std::string{ std::strerror(errno) } };
+            }
+        }
+        else
         {
             close(fd_);
-            throw error{ "can't mmap file, error:" + std::string{ std::strerror(errno) } };
         }
-        size_ = sb.st_size;
     }
 
     mmap_source(const mmap_source&) = delete;

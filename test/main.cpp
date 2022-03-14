@@ -22,7 +22,9 @@ void check_rows(const T& parser, const std::vector<std::vector<std::string>>& ex
 
 TEST_CASE("mmap_source zero_length")
 {
-    REQUIRE_THROWS(lazycsv::mmap_source{ "inputs/zero_length.csv" });
+    lazycsv::mmap_source source{ "inputs/zero_length.csv" };
+    REQUIRE_EQ(source.size(), 0);
+    REQUIRE_EQ(source.data(), nullptr);
 }
 
 TEST_CASE("mmap_source non_existent")
