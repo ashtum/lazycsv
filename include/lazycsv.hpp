@@ -332,6 +332,20 @@ class parser
             return std::string_view(trimed_begin, trimed_end - trimed_begin);
         }
 
+        auto unescaped() const
+        {
+            auto [trimed_begin, trimed_end] = trim_policy::trim(begin_, end_);
+            std::string result;
+            result.reserve(trimed_end - trimed_begin);
+            for (const auto* i = trimed_begin; i < trimed_end; i++)
+            {
+                if (*i == quote_char::value && i + 1 < trimed_end && *(i + 1) == quote_char::value)
+                    i++;
+                result.push_back(*i);
+            }
+            return result;
+        }
+
       private:
         static const auto* escape_leading_quote(const char* begin, const char* end)
         {

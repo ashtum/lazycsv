@@ -129,4 +129,19 @@ TEST_CASE("quoted cells")
     };
     check_rows(
         parser, { { "A0\"\"", "B0", "C0", "" }, { "", "B1,", "C1", "D1" }, { "", ",", "", "D\"\"2" }, { "A3", "\"B3\"", "C3", "" } });
+
+    auto row_0 = parser.begin();
+    auto [a0, b0, c0, d0] = row_0->cells(0, 1, 2, 3);
+    REQUIRE_EQ("A0\"", a0.unescaped());
+    REQUIRE_EQ("B0", b0.unescaped());
+    REQUIRE_EQ("C0", c0.unescaped());
+    REQUIRE_EQ("", d0.unescaped());
+
+    auto row_2 = std::next(row_0, 2);
+    auto [d2] = row_2->cells(3);
+    REQUIRE_EQ("D\"2", d2.unescaped());
+
+    auto row_3 = std::next(row_0, 3);
+    auto [b3] = row_3->cells(1);
+    REQUIRE_EQ("\"B3\"", b3.unescaped());
 }
