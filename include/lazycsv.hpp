@@ -9,10 +9,16 @@
 #include <string>
 #include <string_view>
 
+#if defined(_WIN32)
+#include <windows.h>
+#endif
+
+#if defined(__unix__) || defined(__unix) || defined(__linux__) || defined(__APPLE__)
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#endif
 
 namespace lazycsv
 {
@@ -180,11 +186,77 @@ class mmap_source
 {
     const char* data_{ nullptr };
     size_t size_;
+#if defined(_WIN32)
+    HANDLE file_handle_{ INVALID_HANDLE_VALUE };
+    HANDLE mapping_handle_{ NULL };
+#endif
+#if defined(__unix__) || defined(__unix) || defined(__linux__) || defined(__APPLE__)
     int fd_;
+#endif
 
   public:
     explicit mmap_source(const std::string& path)
     {
+#if defined(_WIN32)
+        // Windows implementation
+        file_handle_ = CreateFileA(
+            path.c_str(),
+            GENERIC_READ,
+            FILE_SHARE_READ,
+            NULL,
+            OPEN_EXISTING,
+            FILE_ATTRIBUTE_NORMAL,
+            NULL);
+
+        if (file_handle_ == INVALID_HANDLE_VALUE)
+            throw error{ "can't open file, path: " + path + ", error code:" + std::to_string(GetLastError()) };
+
+        LARGE_INTEGER file_size;
+        if (!GetFileSizeEx(file_handle_, &file_size))
+        {
+            CloseHandle(file_handle_);
+            throw error{ "can't get file size, error code:" + std::to_string(GetLastError()) };
+        }
+
+        size_ = static_cast<size_t>(file_size.QuadPart);
+
+        if (size_ > 0)
+        {
+            mapping_handle_ = CreateFileMappingA(
+                file_handle_,
+                NULL,
+                PAGE_READONLY,
+                0,
+                0,
+                NULL);
+
+            if (mapping_handle_ == NULL)
+            {
+                CloseHandle(file_handle_);
+                throw error{ "can't create file mapping, error code:" + std::to_string(GetLastError()) };
+            }
+
+            data_ = static_cast<const char*>(MapViewOfFile(
+                mapping_handle_,
+                FILE_MAP_READ,
+                0,
+                0,
+                0));
+
+            if (data_ == nullptr)
+            {
+                CloseHandle(mapping_handle_);
+                CloseHandle(file_handle_);
+                throw error{ "can't map view of file, error code:" + std::to_string(GetLastError()) };
+            }
+        }
+        else
+        {
+            CloseHandle(file_handle_);
+        }
+#endif
+#if defined(__unix__) || defined(__unix) || defined(__linux__) || defined(__APPLE__)
+        // POSIX implementation
         fd_ = open(path.c_str(), O_RDONLY | O_CLOEXEC);
         if (fd_ == -1)
             throw error{ "can't open file, path: " + path + ", error:" + std::string{ std::strerror(errno) } };
@@ -211,6 +283,7 @@ class mmap_source
         {
             close(fd_);
         }
+#endif
     }
 
     mmap_source(const mmap_source&) = delete;
@@ -219,16 +292,32 @@ class mmap_source
     mmap_source(mmap_source&& other) noexcept
         : data_(other.data_)
         , size_(other.size_)
+#if defined(_WIN32)
+        , file_handle_(other.file_handle_)
+        , mapping_handle_(other.mapping_handle_)
+#endif
+#if defined(__unix__) || defined(__unix) || defined(__linux__) || defined(__APPLE__)
         , fd_(other.fd_)
+#endif
     {
         other.data_ = nullptr;
+#if defined(_WIN32)
+        other.file_handle_ = INVALID_HANDLE_VALUE;
+        other.mapping_handle_ = NULL;
+#endif
     }
 
     mmap_source& operator=(mmap_source&& other) noexcept
     {
         std::swap(data_, other.data_);
         std::swap(size_, other.size_);
+#if defined(_WIN32)
+        std::swap(file_handle_, other.file_handle_);
+        std::swap(mapping_handle_, other.mapping_handle_);
+#endif
+#if defined(__unix__) || defined(__unix) || defined(__linux__) || defined(__APPLE__)
         std::swap(fd_, other.fd_);
+#endif
         return *this;
     }
 
@@ -246,8 +335,17 @@ class mmap_source
     {
         if (data_)
         {
+#if defined(_WIN32)
+            UnmapViewOfFile(const_cast<char*>(data_));
+            if (mapping_handle_ != NULL)
+                CloseHandle(mapping_handle_);
+            if (file_handle_ != INVALID_HANDLE_VALUE)
+                CloseHandle(file_handle_);
+#endif
+#if defined(__unix__) || defined(__unix) || defined(__linux__) || defined(__APPLE__)
             munmap(const_cast<char*>(data_), size_);
             close(fd_);
+#endif
         }
     }
 };
@@ -314,6 +412,9 @@ class parser
             : begin_(escape_leading_quote(begin, end))
             , end_(escape_trailing_quote(begin, end))
         {
+            // Handle CRLF line endings by adjusting end_
+            if (end_ > begin_ && *(end_ - 1) == '\r')
+                --end_;
         }
 
         const auto* operator->() const
