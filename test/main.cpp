@@ -13,7 +13,7 @@ void check_rows(const T& parser, const std::vector<std::vector<std::string>>& ex
         auto cell_index = 0;
         for (const auto cell : row)
         {
-            REQUIRE_EQ(expected_cells.at(cell_index++), cell.trimed());
+            REQUIRE_EQ(expected_cells.at(cell_index++), cell.trimmed());
         }
         REQUIRE_EQ(cell_index, expected_cells.size());
     }
