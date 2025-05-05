@@ -105,3 +105,7 @@ std::string csv_data{ "name,lastname,age\nPeter,Griffin,45\nchris,Griffin,14\n" 
 lazycsv::parser<std::string_view> parser_a{ csv_data };
 lazycsv::parser<std::string> parser_b{ csv_data };
 ```
+
+## Acknowledgments
+
+- [Wang XiHua](https://github.com/kabxx) for adding Windows support and cross-platform line ending.
