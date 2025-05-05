@@ -1,7 +1,6 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include <doctest.h>
 
-#include <filesystem>
 #include <lazycsv.hpp>
 
 template<class T>
@@ -35,9 +34,8 @@ TEST_CASE("mmap_source non_existent")
 
 TEST_CASE("mmap_source basic.csv")
 {
-    // Get the actual file size using std::filesystem
     lazycsv::mmap_source source{ "inputs/basic.csv" };
-    REQUIRE_EQ(source.size(), size_t(std::filesystem::file_size( std::filesystem::path{"inputs/basic.csv"})));
+    REQUIRE_EQ(source.size(), 47);
 }
 
 TEST_CASE("parse basic.csv with mmap_source and use cells function")
