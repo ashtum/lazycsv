@@ -20,111 +20,111 @@ jobs:
       matrix:
         include:
           - compiler: g++-7
-            cxxstd: "17"
+            cxxstd: 17
             os: ubuntu-latest
             container: ubuntu:20.04
             install: g++-7
           - compiler: g++-8
-            cxxstd: "17"
+            cxxstd: 17
             os: ubuntu-latest
             container: ubuntu:20.04
             install: g++-8
           - compiler: g++-9
-            cxxstd: "17"
+            cxxstd: 17
             os: ubuntu-latest
             container: ubuntu:20.04
             install: g++-9
           - compiler: g++-10
-            cxxstd: "17"
+            cxxstd: 17
             os: ubuntu-latest
             container: ubuntu:20.04
             install: g++-10
           - compiler: g++-11
-            cxxstd: "17"
+            cxxstd: 17
             os: ubuntu-latest
             container: ubuntu:22.04
             install: g++-11
           - compiler: g++-12
-            cxxstd: "17,20"
+            cxxstd: 17,20
             os: ubuntu-latest
             container: ubuntu:22.04
             install: g++-12
           - compiler: g++-13
-            cxxstd: "17,20"
+            cxxstd: 17,20
             os: ubuntu-24.04
             install: g++-13
           - compiler: clang++-6.0
-            cxxstd: "17"
+            cxxstd: 17
             os: ubuntu-latest
             container: ubuntu:18.04
             install: clang-6.0
           - compiler: clang++-7
-            cxxstd: "17"
+            cxxstd: 17
             os: ubuntu-latest
             container: ubuntu:18.04
             install: clang-7
           - compiler: clang++-8
-            cxxstd: "17"
+            cxxstd: 17
             os: ubuntu-latest
             container: ubuntu:18.04
             install: clang-8
           - compiler: clang++-9
-            cxxstd: "17"
+            cxxstd: 17
             os: ubuntu-latest
             container: ubuntu:20.04
             install: clang-9
           - compiler: clang++-10
-            cxxstd: "17"
+            cxxstd: 17
             os: ubuntu-latest
             container: ubuntu:20.04
             install: clang-10
           - compiler: clang++-11
-            cxxstd: "17"
+            cxxstd: 17
             os: ubuntu-latest
             container: ubuntu:20.04
             install: clang-11
           - compiler: clang++-12
-            cxxstd: "17"
+            cxxstd: 17
             os: ubuntu-latest
             container: ubuntu:20.04
             install: clang-12
           - compiler: clang++-13
-            cxxstd: "17,20"
+            cxxstd: 17,20
             os: ubuntu-latest
             container: ubuntu:22.04
             install: clang-13
           - compiler: clang++-14
-            cxxstd: "17,20"
+            cxxstd: 17,20
             os: ubuntu-latest
             container: ubuntu:22.04
             install: clang-14
           - compiler: clang++-15
-            cxxstd: "17,20"
+            cxxstd: 17,20
             os: ubuntu-latest
             container: ubuntu:22.04
             install: clang-15
           - compiler: clang++-16
-            cxxstd: "17,20"
+            cxxstd: 17,20
             os: ubuntu-24.04
             install: clang-16
           - compiler: clang++-17
-            cxxstd: "17,20"
+            cxxstd: 17,20
             os: ubuntu-24.04
             install: clang-17
           - compiler: clang++-18
-            cxxstd: "17,20,23"
+            cxxstd: 17,20,23
             os: ubuntu-24.04
             install: clang-18
 # macos
           - compiler: clang++
             os: macos-13
-            cxxstd: "17,20"
+            cxxstd: 17,20
           - compiler: clang++
             os: macos-14
-            cxxstd: "17,20"
+            cxxstd: 17,20
           - compiler: clang++
             os: macos-15
-            cxxstd: "17,20,23"
+            cxxstd: 17,20,23
 
     runs-on: ${{matrix.os}}
     container:
@@ -166,13 +166,54 @@ jobs:
               else
                 echo "running: ${standard} ${variant}"
                 rm -rf ./*
-                cmake -DCMAKE_CXX_COMPILER=${{matrix.compiler}} -DCMAKE_CXX_STANDARD=${standard} -DCMAKE_BUILD_TYPE=${variant} ..
+                cmake -DCMAKE_CXX_COMPILER=${{matrix.compiler}} -DCMAKE_CXX_STANDARD=${standard} -DCMAKE_BUILD_TYPE=${variant} -DBUILD_TESTING=ON ..
                 cmake --build .
-                cd test
-                ./main
-                cd -
+                ctest --output-on-failure --no-tests=error
                 err=$?
               fi
             done
           done
           [[ $err -ne 0 ]] && false || "true"
+
+  windows:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - generator: "Visual Studio 16 2019"
+            addrmd: win32
+            os: windows-2019
+          - generator: "Visual Studio 16 2019"
+            addrmd: x64
+            os: windows-2019
+          - generator: "Visual Studio 17 2022"
+            addrmd: win32
+            os: windows-2022
+          - generator: "Visual Studio 17 2022"
+            addrmd: x64
+            os: windows-2022
+
+    runs-on: ${{matrix.os}}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure
+        shell: pwsh
+        run: |
+          mkdir build && cd build
+          cmake -G "${{ matrix.generator }}" -A "${{ matrix.addrmd }}" -DBUILD_TESTING=ON ..
+
+      - name: Build and run tests (Debug)
+        shell: pwsh
+        run: |
+          cd build
+          cmake --build . --config Debug
+          ctest --output-on-failure --no-tests=error -C Debug
+
+      - name: Build and run tests (Release)
+        shell: pwsh
+        run: |
+          cd build
+          cmake --build . --config Release
+          ctest --output-on-failure --no-tests=error -C Release

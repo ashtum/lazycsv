@@ -16,19 +16,16 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 if(MSVC)
   add_compile_options(/W4)
-endif()
-
-if(CMAKE_COMPILER_IS_GNUCXX)
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
   add_compile_options(-Wall -Wfatal-errors -Wextra -Wnon-virtual-dtor -pedantic)
 endif()
-
-if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  add_compile_options(-Wall -Wfatal-errors -Wextra -Wnon-virtual-dtor -pedantic)
-endif()
-
-add_subdirectory(test)
 
 # Install headers
 install(DIRECTORY "${CMAKE_SOURCE_DIR}/include/"
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
   FILES_MATCHING PATTERN "*.hpp")
+
+if (${BUILD_TESTING})
+  include(CTest)
+  add_subdirectory(test)
+endif ()
