@@ -24,9 +24,9 @@ namespace detail
 {
 struct chunk_rows
 {
-    static auto chunk(const char* begin, const char* dead_end)
+    static const char* chunk(const char* begin, const char* dead_end)
     {
-        if (const auto* end = static_cast<const char*>(memchr(begin, '\n', dead_end - begin)))
+        if (const char* end = static_cast<const char*>(memchr(begin, '\n', dead_end - begin)))
             return end;
         return dead_end;
     }
@@ -35,12 +35,12 @@ struct chunk_rows
 template<char delimiter, char quote_char>
 struct chunk_cells
 {
-    static auto chunk(const char* begin, const char* dead_end)
+    static const char* chunk(const char* begin, const char* dead_end)
     {
         bool quote_opened = false;
         const char* quote_location = {};
 
-        for (const auto* i = begin; i < dead_end; i++)
+        for (const char* i = begin; i < dead_end; i++)
         {
             if (*i == delimiter && !quote_opened)
                 return i;
@@ -92,14 +92,14 @@ class fw_iterator
     {
     }
 
-    auto operator++(int)
+    fw_iterator operator++(int)
     {
         const auto tmp = *this;
         ++*this;
         return tmp;
     }
 
-    auto& operator++()
+    fw_iterator& operator++()
     {
         begin_ = end_ + 1;
         if (end_ != dead_end_) // check it is not the last chunk
@@ -117,14 +117,14 @@ class fw_iterator
         return begin_ == rhs.begin_;
     }
 
-    auto operator*() const
+    T operator*() const
     {
-        return T{ begin_, end_ };
+        return { begin_, end_ };
     }
 
-    auto operator->() const
+    T operator->() const
     {
-        return T{ begin_, end_ };
+        return { begin_, end_ };
     }
 };
 } // namespace detail
@@ -156,19 +156,19 @@ template<char... Trim_chars>
 struct trim_chars
 {
   private:
-    constexpr static auto is_trim_char(char)
+    constexpr static bool is_trim_char(char)
     {
         return false;
     }
 
     template<class... Other_chars>
-    constexpr static auto is_trim_char(char c, char trim_char, Other_chars... other_chars)
+    constexpr static bool is_trim_char(char c, char trim_char, Other_chars... other_chars)
     {
         return c == trim_char || is_trim_char(c, other_chars...);
     }
 
   public:
-    constexpr static auto trim(const char* begin, const char* end)
+    constexpr static std::pair<const char*, const char*> trim(const char* begin, const char* end)
     {
         const char* trimmed_begin = begin;
         while (trimmed_begin != end && is_trim_char(*trimmed_begin, Trim_chars...))
@@ -176,7 +176,7 @@ struct trim_chars
         const char* trimmed_end = end;
         while (trimmed_end != trimmed_begin && is_trim_char(*(trimmed_end - 1), Trim_chars...))
             --trimmed_end;
-        return std::pair{ trimmed_begin, trimmed_end };
+        return { trimmed_begin, trimmed_end };
     }
 };
 
@@ -287,12 +287,12 @@ class mmap_source
         return *this;
     }
 
-    const auto* data() const
+    const char* data() const
     {
         return data_;
     }
 
-    auto size() const
+    std::size_t size() const
     {
         return size_;
     }
@@ -330,39 +330,6 @@ class parser
     {
     }
 
-    auto begin() const
-    {
-        row_iterator it{ source_.data(), source_.data() + source_.size() };
-        if constexpr (has_header::value)
-            ++it;
-        return it;
-    }
-
-    auto end() const
-    {
-        auto pos = source_.data() + source_.size() + 1;
-        if (source_.size() && *(pos - 2) == '\n') // skip the last new line if exists
-            pos--;
-        return row_iterator{ pos, pos };
-    }
-
-    auto header() const
-    {
-        return *row_iterator{ source_.data(), source_.data() + source_.size() };
-    }
-
-    auto index_of(std::string_view column_name) const
-    {
-        int index = 0;
-        for (const auto cell : header())
-        {
-            if (column_name == cell.trimmed())
-                return index;
-            index++;
-        }
-        throw error{ "Column does not exist" };
-    }
-
     class cell
     {
         const char* begin_{ nullptr };
@@ -377,28 +344,28 @@ class parser
         {
         }
 
-        const auto* operator->() const
+        const cell* operator->() const
         {
             return this;
         }
 
-        auto raw() const
+        std::string_view raw() const
         {
-            return std::string_view(begin_, end_ - begin_);
+            return { begin_, static_cast<std::size_t>(end_ - begin_) };
         }
 
-        auto trimmed() const
+        std::string_view trimmed() const
         {
             auto [trimmed_begin, trimmed_end] = trim_policy::trim(begin_, end_);
-            return std::string_view(trimmed_begin, trimmed_end - trimmed_begin);
+            return { trimmed_begin, static_cast<std::size_t>(trimmed_end - trimmed_begin) };
         }
 
-        auto unescaped() const
+        std::string unescaped() const
         {
             auto [trimmed_begin, trimmed_end] = trim_policy::trim(begin_, end_);
             std::string result;
             result.reserve(trimmed_end - trimmed_begin);
-            for (const auto* i = trimmed_begin; i < trimmed_end; i++)
+            for (const char* i = trimmed_begin; i < trimmed_end; i++)
             {
                 if (*i == quote_char::value && i + 1 < trimmed_end && *(i + 1) == quote_char::value)
                     i++;
@@ -408,7 +375,7 @@ class parser
         }
 
       private:
-        static const auto* escape_leading_quote(const char* begin, const char* end)
+        static const char* escape_leading_quote(const char* begin, const char* end)
         {
             if (end - begin >= 2 && *begin == quote_char::value && *(end - 1) == quote_char::value)
                 return begin + 1;
@@ -416,7 +383,7 @@ class parser
             return begin;
         }
 
-        static const auto* escape_trailing_quote(const char* begin, const char* end)
+        static const char* escape_trailing_quote(const char* begin, const char* end)
         {
             if (end - begin >= 2 && *begin == quote_char::value && *(end - 1) == quote_char::value)
                 return end - 1;
@@ -444,24 +411,24 @@ class parser
                 --end_;
         }
 
-        const auto* operator->() const
+        const row* operator->() const
         {
             return this;
         }
 
-        auto raw() const
+        std::string_view raw() const
         {
-            return std::string_view(begin_, end_ - begin_);
+            return { begin_, end_ - begin_ };
         }
 
         template<typename... Indexes>
-        auto cells(Indexes... indexes) const
+        std::array<cell, sizeof...(Indexes)> cells(Indexes... indexes) const
         {
             std::array<cell, sizeof...(Indexes)> results;
             std::array<int, sizeof...(Indexes)> desired_indexes{ indexes... };
 
             auto desired_indexes_it = desired_indexes.begin();
-            auto index = 0;
+            int index = 0;
             for (const auto cell : *this)
             {
                 if (index++ == *desired_indexes_it)
@@ -474,17 +441,50 @@ class parser
             throw error{ "Row has fewer cells than desired" };
         }
 
-        auto begin() const
+        cell_iterator begin() const
         {
-            return cell_iterator{ begin_, end_ };
+            return { begin_, end_ };
         }
 
-        auto end() const
+        cell_iterator end() const
         {
-            return cell_iterator{ end_ + 1, end_ + 1 };
+            return { end_ + 1, end_ + 1 };
         }
     };
 
     using row_iterator = detail::fw_iterator<row, detail::chunk_rows>;
+
+    row_iterator begin() const
+    {
+        row_iterator it{ source_.data(), source_.data() + source_.size() };
+        if constexpr (has_header::value)
+            ++it;
+        return it;
+    }
+
+    row_iterator end() const
+    {
+        const char* pos = source_.data() + source_.size() + 1;
+        if (source_.size() && *(pos - 2) == '\n') // skip the last new line if exists
+            pos--;
+        return row_iterator{ pos, pos };
+    }
+
+    row header() const
+    {
+        return *row_iterator{ source_.data(), source_.data() + source_.size() };
+    }
+
+    int index_of(std::string_view column_name) const
+    {
+        int index = 0;
+        for (const auto cell : header())
+        {
+            if (column_name == cell.trimmed())
+                return index;
+            index++;
+        }
+        throw error{ "Column does not exist" };
+    }
 };
 } // namespace lazycsv
