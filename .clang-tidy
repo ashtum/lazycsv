@@ -1,5 +1,8 @@
 FormatStyle:        'file'
 Checks:             '*,
+                    -llvmlibc-*,
+                    -altera-*,
+                    -readability-identifier-length,
                     -cert-dcl21-cpp,
                     -cppcoreguidelines-pro-type-vararg,
                     -hicpp-vararg,
