@@ -4,7 +4,7 @@
 
 ## What's the lazycsv?
 
-**lazycsv** is a c++17, posix-compliant, single-header library for reading and parsing csv files.  
+**lazycsv** is a c++17, single-header library for reading and parsing csv files.  
 It's fast and lightweight and does not allocate any memory in the constructor or while parsing. It parses each row and cell just on demand on each iteration, that's why it's called lazy.
 
 ### Quick usage
@@ -31,14 +31,14 @@ If it's necessary to return to the already parsed rows and cells, they can be st
 
 ### Features
 
-Returned `std::string_view` by `raw()` and `trimed()` member functions are valid as long as the parser object is alive:
+Returned `std::string_view` by `raw()` and `trimmed()` member functions are valid as long as the parser object is alive:
 
 ```c++
 std::vector<std::string_view> cities;
 for (const auto row : parser)
 {
     const auto [city, state] = row.cells(0, 1);
-    cities.push_back(city.trimed());
+    cities.push_back(city.trimmed());
 }
 ```
 
@@ -78,7 +78,7 @@ for (const auto row : parser)
     const auto [city] = row.cells(6);
     desired_cells.push_back(city);
 
-    if (city.trimed() == "Kashan")
+    if (city.trimmed() == "Kashan")
         desired_rows.push_back(row);
 }
 static_assert(sizeof(lazycsv::parser<>::row) == 2 * sizeof(void*));  // i'm lightweight

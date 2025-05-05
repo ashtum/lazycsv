@@ -11,8 +11,7 @@
 
 #if defined(_WIN32)
 #include <windows.h>
-#else
-// Unix-like platforms (Linux, macOS, BSD, etc.)
+#else // defined(_WIN32)
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
@@ -171,24 +170,24 @@ struct trim_chars
   public:
     constexpr static auto trim(const char* begin, const char* end)
     {
-        const char* trimed_begin = begin;
-        while (trimed_begin != end && is_trim_char(*trimed_begin, Trim_chars...))
-            ++trimed_begin;
-        const char* trimed_end = end;
-        while (trimed_end != trimed_begin && is_trim_char(*(trimed_end - 1), Trim_chars...))
-            --trimed_end;
-        return std::pair{ trimed_begin, trimed_end };
+        const char* trimmed_begin = begin;
+        while (trimmed_begin != end && is_trim_char(*trimmed_begin, Trim_chars...))
+            ++trimmed_begin;
+        const char* trimmed_end = end;
+        while (trimmed_end != trimmed_begin && is_trim_char(*(trimmed_end - 1), Trim_chars...))
+            --trimmed_end;
+        return std::pair{ trimmed_begin, trimmed_end };
     }
 };
 
 class mmap_source
 {
     const char* data_{ nullptr };
-    size_t size_;
+    std::size_t size_;
 #if defined(_WIN32)
     HANDLE fd_{ INVALID_HANDLE_VALUE };
     HANDLE map_{ NULL };
-#else
+#else // defined(_WIN32)
     int fd_;
 #endif
 
@@ -196,7 +195,6 @@ class mmap_source
     explicit mmap_source(const std::string& path)
     {
 #if defined(_WIN32)
-        // Windows implementation
         fd_ = CreateFileA(path.c_str(), GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 
         if (fd_ == INVALID_HANDLE_VALUE)
@@ -209,7 +207,7 @@ class mmap_source
             throw error{ "can't get file size, error code:" + std::to_string(GetLastError()) };
         }
 
-        size_ = static_cast<size_t>(file_size.QuadPart);
+        size_ = static_cast<std::size_t>(file_size.QuadPart);
 
         if (size_ > 0)
         {
@@ -234,8 +232,7 @@ class mmap_source
         {
             CloseHandle(fd_);
         }
-#else
-        // Unix implementation
+#else // defined(_WIN32)
         fd_ = open(path.c_str(), O_RDONLY | O_CLOEXEC);
         if (fd_ == -1)
             throw error{ "can't open file, path: " + path + ", error:" + std::string{ std::strerror(errno) } };
@@ -274,7 +271,7 @@ class mmap_source
         , fd_(other.fd_)
 #if defined(_WIN32)
         , map_(other.map_)
-#endif
+#endif // defined(_WIN32)
     {
         other.data_ = nullptr;
     }
@@ -286,7 +283,7 @@ class mmap_source
         std::swap(fd_, other.fd_);
 #if defined(_WIN32)
         std::swap(map_, other.map_);
-#endif
+#endif // defined(_WIN32)
         return *this;
     }
 
@@ -308,7 +305,7 @@ class mmap_source
             UnmapViewOfFile(const_cast<char*>(data_));
             CloseHandle(map_);
             CloseHandle(fd_);
-#else
+#else // defined(_WIN32)
             munmap(const_cast<char*>(data_), size_);
             close(fd_);
 #endif
@@ -359,7 +356,7 @@ class parser
         int index = 0;
         for (const auto cell : header())
         {
-            if (column_name == cell.trimed())
+            if (column_name == cell.trimmed())
                 return index;
             index++;
         }
@@ -378,7 +375,6 @@ class parser
             : begin_(escape_leading_quote(begin, end))
             , end_(escape_trailing_quote(begin, end))
         {
-            // CRLF handling moved to row constructor
         }
 
         const auto* operator->() const
@@ -391,20 +387,20 @@ class parser
             return std::string_view(begin_, end_ - begin_);
         }
 
-        auto trimed() const
+        auto trimmed() const
         {
-            auto [trimed_begin, trimed_end] = trim_policy::trim(begin_, end_);
-            return std::string_view(trimed_begin, trimed_end - trimed_begin);
+            auto [trimmed_begin, trimmed_end] = trim_policy::trim(begin_, end_);
+            return std::string_view(trimmed_begin, trimmed_end - trimmed_begin);
         }
 
         auto unescaped() const
         {
-            auto [trimed_begin, trimed_end] = trim_policy::trim(begin_, end_);
+            auto [trimmed_begin, trimmed_end] = trim_policy::trim(begin_, end_);
             std::string result;
-            result.reserve(trimed_end - trimed_begin);
-            for (const auto* i = trimed_begin; i < trimed_end; i++)
+            result.reserve(trimmed_end - trimmed_begin);
+            for (const auto* i = trimmed_begin; i < trimmed_end; i++)
             {
-                if (*i == quote_char::value && i + 1 < trimed_end && *(i + 1) == quote_char::value)
+                if (*i == quote_char::value && i + 1 < trimmed_end && *(i + 1) == quote_char::value)
                     i++;
                 result.push_back(*i);
             }
