@@ -198,13 +198,13 @@ class mmap_source
         fd_ = CreateFileA(path.c_str(), GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 
         if (fd_ == INVALID_HANDLE_VALUE)
-            throw error{ "can't open file, path: " + path + ", error code:" + std::to_string(GetLastError()) };
+            throw std::system_error(GetLastError(), std::system_category());
 
         LARGE_INTEGER file_size;
         if (!GetFileSizeEx(fd_, &file_size))
         {
             CloseHandle(fd_);
-            throw error{ "can't get file size, error code:" + std::to_string(GetLastError()) };
+            throw std::system_error(GetLastError(), std::system_category());
         }
 
         size_ = static_cast<std::size_t>(file_size.QuadPart);
@@ -216,7 +216,7 @@ class mmap_source
             if (map_ == NULL)
             {
                 CloseHandle(fd_);
-                throw error{ "can't create file mapping, error code:" + std::to_string(GetLastError()) };
+                throw std::system_error(GetLastError(), std::system_category());
             }
 
             data_ = static_cast<const char*>(MapViewOfFile(map_, FILE_MAP_READ, 0, 0, 0));
@@ -225,7 +225,7 @@ class mmap_source
             {
                 CloseHandle(map_);
                 CloseHandle(fd_);
-                throw error{ "can't map view of file, error code:" + std::to_string(GetLastError()) };
+                throw std::system_error(GetLastError(), std::system_category());
             }
         }
         else
@@ -235,13 +235,13 @@ class mmap_source
 #else // defined(_WIN32)
         fd_ = open(path.c_str(), O_RDONLY | O_CLOEXEC);
         if (fd_ == -1)
-            throw error{ "can't open file, path: " + path + ", error:" + std::string{ std::strerror(errno) } };
+            throw std::system_error(errno, std::system_category());
 
         struct stat sb = {};
         if (fstat(fd_, &sb) == -1)
         {
             close(fd_);
-            throw error{ "can't get file size, error:" + std::string{ std::strerror(errno) } };
+            throw std::system_error(errno, std::system_category());
         }
 
         size_ = sb.st_size;
@@ -252,7 +252,7 @@ class mmap_source
             if (data_ == MAP_FAILED)
             {
                 close(fd_);
-                throw error{ "can't mmap file, error:" + std::string{ std::strerror(errno) } };
+                throw std::system_error(errno, std::system_category());
             }
         }
         else
