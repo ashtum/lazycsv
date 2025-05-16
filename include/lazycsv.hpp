@@ -24,9 +24,11 @@ namespace detail
 {
 struct chunk_rows
 {
-    static const char* chunk(const char* begin, const char* dead_end)
+    static const char*
+    chunk(const char* begin, const char* dead_end)
     {
-        if (const char* end = static_cast<const char*>(memchr(begin, '\n', dead_end - begin)))
+        if(const char* end =
+               static_cast<const char*>(memchr(begin, '\n', dead_end - begin)))
             return end;
         return dead_end;
     }
@@ -35,28 +37,29 @@ struct chunk_rows
 template<char delimiter, char quote_char>
 struct chunk_cells
 {
-    static const char* chunk(const char* begin, const char* dead_end)
+    static const char*
+    chunk(const char* begin, const char* dead_end)
     {
-        bool quote_opened = false;
+        bool quote_opened          = false;
         const char* quote_location = {};
 
-        for (const char* i = begin; i < dead_end; i++)
+        for(const char* i = begin; i < dead_end; i++)
         {
-            if (*i == delimiter && !quote_opened)
+            if(*i == delimiter && !quote_opened)
                 return i;
 
-            if (*i == quote_char)
+            if(*i == quote_char)
             {
-                if (!quote_opened)
+                if(!quote_opened)
                 {
-                    quote_opened = true;
+                    quote_opened   = true;
                     quote_location = i;
                 }
                 else
                 {
                     quote_opened = false;
                     bool escaped = (quote_location == i - 1);
-                    if (escaped)
+                    if(escaped)
                     {
                         quote_location = {};
                     }
@@ -78,12 +81,12 @@ class fw_iterator
     const char* end_;
     const char* dead_end_;
 
-  public:
-    using value_type = T;
-    using difference_type = std::ptrdiff_t;
+public:
+    using value_type        = T;
+    using difference_type   = std::ptrdiff_t;
     using iterator_category = std::forward_iterator_tag;
-    using pointer = T;
-    using reference = T;
+    using pointer           = T;
+    using reference         = T;
 
     fw_iterator(const char* begin, const char* dead_end)
         : begin_(begin)
@@ -92,37 +95,43 @@ class fw_iterator
     {
     }
 
-    fw_iterator operator++(int)
+    fw_iterator
+    operator++(int)
     {
         const auto tmp = *this;
         ++*this;
         return tmp;
     }
 
-    fw_iterator& operator++()
+    fw_iterator&
+    operator++()
     {
         begin_ = end_ + 1;
-        if (end_ != dead_end_) // check it is not the last chunk
+        if(end_ != dead_end_) // check it is not the last chunk
             end_ = chunk_policy::chunk(begin_, dead_end_);
         return *this;
     }
 
-    bool operator!=(const fw_iterator& rhs) const
+    bool
+    operator!=(const fw_iterator& rhs) const
     {
         return begin_ != rhs.begin_;
     }
 
-    bool operator==(const fw_iterator& rhs) const
+    bool
+    operator==(const fw_iterator& rhs) const
     {
         return begin_ == rhs.begin_;
     }
 
-    T operator*() const
+    T
+    operator*() const
     {
         return { begin_, end_ };
     }
 
-    T operator->() const
+    T
+    operator->() const
     {
         return { begin_, end_ };
     }
@@ -155,26 +164,31 @@ struct has_header
 template<char... Trim_chars>
 struct trim_chars
 {
-  private:
-    constexpr static bool is_trim_char(char)
+private:
+    constexpr static bool
+    is_trim_char(char)
     {
         return false;
     }
 
     template<class... Other_chars>
-    constexpr static bool is_trim_char(char c, char trim_char, Other_chars... other_chars)
+    constexpr static bool
+    is_trim_char(char c, char trim_char, Other_chars... other_chars)
     {
         return c == trim_char || is_trim_char(c, other_chars...);
     }
 
-  public:
-    constexpr static std::pair<const char*, const char*> trim(const char* begin, const char* end)
+public:
+    constexpr static std::pair<const char*, const char*>
+    trim(const char* begin, const char* end)
     {
         const char* trimmed_begin = begin;
-        while (trimmed_begin != end && is_trim_char(*trimmed_begin, Trim_chars...))
+        while(trimmed_begin != end &&
+              is_trim_char(*trimmed_begin, Trim_chars...))
             ++trimmed_begin;
         const char* trimmed_end = end;
-        while (trimmed_end != trimmed_begin && is_trim_char(*(trimmed_end - 1), Trim_chars...))
+        while(trimmed_end != trimmed_begin &&
+              is_trim_char(*(trimmed_end - 1), Trim_chars...))
             --trimmed_end;
         return { trimmed_begin, trimmed_end };
     }
@@ -191,17 +205,24 @@ class mmap_source
     int fd_;
 #endif
 
-  public:
+public:
     explicit mmap_source(const std::string& path)
     {
 #if defined(_WIN32)
-        fd_ = CreateFileA(path.c_str(), GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+        fd_ = CreateFileA(
+            path.c_str(),
+            GENERIC_READ,
+            FILE_SHARE_READ,
+            NULL,
+            OPEN_EXISTING,
+            FILE_ATTRIBUTE_NORMAL,
+            NULL);
 
-        if (fd_ == INVALID_HANDLE_VALUE)
+        if(fd_ == INVALID_HANDLE_VALUE)
             throw std::system_error(GetLastError(), std::system_category());
 
         LARGE_INTEGER file_size;
-        if (!GetFileSizeEx(fd_, &file_size))
+        if(!GetFileSizeEx(fd_, &file_size))
         {
             CloseHandle(fd_);
             throw std::system_error(GetLastError(), std::system_category());
@@ -209,19 +230,20 @@ class mmap_source
 
         size_ = static_cast<std::size_t>(file_size.QuadPart);
 
-        if (size_ > 0)
+        if(size_ > 0)
         {
             map_ = CreateFileMappingA(fd_, NULL, PAGE_READONLY, 0, 0, NULL);
 
-            if (map_ == NULL)
+            if(map_ == NULL)
             {
                 CloseHandle(fd_);
                 throw std::system_error(GetLastError(), std::system_category());
             }
 
-            data_ = static_cast<const char*>(MapViewOfFile(map_, FILE_MAP_READ, 0, 0, 0));
+            data_ = static_cast<const char*>(
+                MapViewOfFile(map_, FILE_MAP_READ, 0, 0, 0));
 
-            if (data_ == nullptr)
+            if(data_ == nullptr)
             {
                 CloseHandle(map_);
                 CloseHandle(fd_);
@@ -234,11 +256,11 @@ class mmap_source
         }
 #else // defined(_WIN32)
         fd_ = open(path.c_str(), O_RDONLY | O_CLOEXEC);
-        if (fd_ == -1)
+        if(fd_ == -1)
             throw std::system_error(errno, std::system_category());
 
         struct stat sb = {};
-        if (fstat(fd_, &sb) == -1)
+        if(fstat(fd_, &sb) == -1)
         {
             close(fd_);
             throw std::system_error(errno, std::system_category());
@@ -246,10 +268,11 @@ class mmap_source
 
         size_ = sb.st_size;
 
-        if (size_ > 0)
+        if(size_ > 0)
         {
-            data_ = static_cast<const char*>(mmap(nullptr, size_, PROT_READ, MAP_PRIVATE, fd_, 0U));
-            if (data_ == MAP_FAILED)
+            data_ = static_cast<const char*>(
+                mmap(nullptr, size_, PROT_READ, MAP_PRIVATE, fd_, 0U));
+            if(data_ == MAP_FAILED)
             {
                 close(fd_);
                 throw std::system_error(errno, std::system_category());
@@ -263,7 +286,8 @@ class mmap_source
     }
 
     mmap_source(const mmap_source&) = delete;
-    mmap_source& operator=(const mmap_source&) = delete;
+    mmap_source&
+    operator=(const mmap_source&) = delete;
 
     mmap_source(mmap_source&& other) noexcept
         : data_(other.data_)
@@ -276,7 +300,8 @@ class mmap_source
         other.data_ = nullptr;
     }
 
-    mmap_source& operator=(mmap_source&& other) noexcept
+    mmap_source&
+    operator=(mmap_source&& other) noexcept
     {
         std::swap(data_, other.data_);
         std::swap(size_, other.size_);
@@ -287,19 +312,21 @@ class mmap_source
         return *this;
     }
 
-    const char* data() const
+    const char*
+    data() const
     {
         return data_;
     }
 
-    std::size_t size() const
+    std::size_t
+    size() const
     {
         return size_;
     }
 
     ~mmap_source()
     {
-        if (data_)
+        if(data_)
         {
 #if defined(_WIN32)
             UnmapViewOfFile(const_cast<char*>(data_));
@@ -314,16 +341,16 @@ class mmap_source
 };
 
 template<
-    class source = mmap_source,
-    class has_header = has_header<true>,
-    class delimiter = delimiter<','>,
-    class quote_char = quote_char<'"'>,
+    class source      = mmap_source,
+    class has_header  = has_header<true>,
+    class delimiter   = delimiter<','>,
+    class quote_char  = quote_char<'"'>,
     class trim_policy = trim_chars<' ', '\t'>>
 class parser
 {
     source source_;
 
-  public:
+public:
     template<typename... Args>
     explicit parser(Args&&... args)
         : source_(std::forward<Args>(args)...)
@@ -335,7 +362,7 @@ class parser
         const char* begin_{ nullptr };
         const char* end_{ nullptr };
 
-      public:
+    public:
         cell() = default;
 
         cell(const char* begin, const char* end)
@@ -344,62 +371,74 @@ class parser
         {
         }
 
-        const cell* operator->() const
+        const cell*
+        operator->() const
         {
             return this;
         }
 
-        std::string_view raw() const
+        std::string_view
+        raw() const
         {
             return { begin_, static_cast<std::size_t>(end_ - begin_) };
         }
 
-        std::string_view trimmed() const
+        std::string_view
+        trimmed() const
         {
             auto [trimmed_begin, trimmed_end] = trim_policy::trim(begin_, end_);
-            return { trimmed_begin, static_cast<std::size_t>(trimmed_end - trimmed_begin) };
+            return { trimmed_begin,
+                     static_cast<std::size_t>(trimmed_end - trimmed_begin) };
         }
 
-        std::string unescaped() const
+        std::string
+        unescaped() const
         {
             auto [trimmed_begin, trimmed_end] = trim_policy::trim(begin_, end_);
             std::string result;
             result.reserve(trimmed_end - trimmed_begin);
-            for (const char* i = trimmed_begin; i < trimmed_end; i++)
+            for(const char* i = trimmed_begin; i < trimmed_end; i++)
             {
-                if (*i == quote_char::value && i + 1 < trimmed_end && *(i + 1) == quote_char::value)
+                if(*i == quote_char::value && i + 1 < trimmed_end &&
+                   *(i + 1) == quote_char::value)
                     i++;
                 result.push_back(*i);
             }
             return result;
         }
 
-      private:
-        static const char* escape_leading_quote(const char* begin, const char* end)
+    private:
+        static const char*
+        escape_leading_quote(const char* begin, const char* end)
         {
-            if (end - begin >= 2 && *begin == quote_char::value && *(end - 1) == quote_char::value)
+            if(end - begin >= 2 && *begin == quote_char::value &&
+               *(end - 1) == quote_char::value)
                 return begin + 1;
 
             return begin;
         }
 
-        static const char* escape_trailing_quote(const char* begin, const char* end)
+        static const char*
+        escape_trailing_quote(const char* begin, const char* end)
         {
-            if (end - begin >= 2 && *begin == quote_char::value && *(end - 1) == quote_char::value)
+            if(end - begin >= 2 && *begin == quote_char::value &&
+               *(end - 1) == quote_char::value)
                 return end - 1;
 
             return end;
         }
     };
 
-    using cell_iterator = detail::fw_iterator<cell, detail::chunk_cells<delimiter::value, quote_char::value>>;
+    using cell_iterator = detail::fw_iterator<
+        cell,
+        detail::chunk_cells<delimiter::value, quote_char::value>>;
 
     class row
     {
         const char* begin_{ nullptr };
         const char* end_{ nullptr };
 
-      public:
+    public:
         row() = default;
 
         row(const char* begin, const char* end)
@@ -407,46 +446,52 @@ class parser
             , end_(end)
         {
             // Handle CRLF line endings by adjusting end_
-            if (end_ > begin_ && *(end_ - 1) == '\r')
+            if(end_ > begin_ && *(end_ - 1) == '\r')
                 --end_;
         }
 
-        const row* operator->() const
+        const row*
+        operator->() const
         {
             return this;
         }
 
-        std::string_view raw() const
+        std::string_view
+        raw() const
         {
             return { begin_, end_ - begin_ };
         }
 
         template<typename... Indexes>
-        std::array<cell, sizeof...(Indexes)> cells(Indexes... indexes) const
+        std::array<cell, sizeof...(Indexes)>
+        cells(Indexes... indexes) const
         {
             std::array<cell, sizeof...(Indexes)> results;
             std::array<int, sizeof...(Indexes)> desired_indexes{ indexes... };
 
             auto desired_indexes_it = desired_indexes.begin();
-            int index = 0;
-            for (const auto cell : *this)
+            int index               = 0;
+            for(const auto cell : *this)
             {
-                if (index++ == *desired_indexes_it)
+                if(index++ == *desired_indexes_it)
                 {
-                    results[desired_indexes_it - desired_indexes.begin()] = cell;
-                    if (++desired_indexes_it == desired_indexes.end())
+                    results[desired_indexes_it - desired_indexes.begin()] =
+                        cell;
+                    if(++desired_indexes_it == desired_indexes.end())
                         return results;
                 }
             }
-            throw error{ "Row has fewer cells than desired" };
+            throw error("Row has fewer cells than desired");
         }
 
-        cell_iterator begin() const
+        cell_iterator
+        begin() const
         {
             return { begin_, end_ };
         }
 
-        cell_iterator end() const
+        cell_iterator
+        end() const
         {
             return { end_ + 1, end_ + 1 };
         }
@@ -454,37 +499,42 @@ class parser
 
     using row_iterator = detail::fw_iterator<row, detail::chunk_rows>;
 
-    row_iterator begin() const
+    row_iterator
+    begin() const
     {
-        row_iterator it{ source_.data(), source_.data() + source_.size() };
-        if constexpr (has_header::value)
+        row_iterator it(source_.data(), source_.data() + source_.size());
+        if constexpr(has_header::value)
             ++it;
         return it;
     }
 
-    row_iterator end() const
+    row_iterator
+    end() const
     {
         const char* pos = source_.data() + source_.size() + 1;
-        if (source_.size() && *(pos - 2) == '\n') // skip the last new line if exists
+        if(source_.size() &&
+           *(pos - 2) == '\n') // skip the last new line if exists
             pos--;
-        return row_iterator{ pos, pos };
+        return { pos, pos };
     }
 
-    row header() const
+    row
+    header() const
     {
         return *row_iterator{ source_.data(), source_.data() + source_.size() };
     }
 
-    int index_of(std::string_view column_name) const
+    int
+    index_of(std::string_view column_name) const
     {
         int index = 0;
-        for (const auto cell : header())
+        for(const auto cell : header())
         {
-            if (column_name == cell.trimmed())
+            if(column_name == cell.trimmed())
                 return index;
             index++;
         }
-        throw error{ "Column does not exist" };
+        throw error("Column does not exist");
     }
 };
 } // namespace lazycsv
