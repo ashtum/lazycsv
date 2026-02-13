@@ -459,7 +459,7 @@ public:
         std::string_view
         raw() const
         {
-            return { begin_, end_ - begin_ };
+            return { begin_, static_cast<std::size_t>(end_ - begin_) };
         }
 
         template<typename... Indexes>

@@ -57,6 +57,8 @@ TEST_CASE("parse basic.csv with mmap_source and use cells function")
         { "A3", "B3", "C3", "D3" }
     };
 
+    REQUIRE_EQ("A0,B0,C0,D0", parser.header().raw());
+
     const auto [a, b, c, d] = parser.header().cells(0, 1, 2, 3);
     auto header_cells       = expected_rows.at(0);
     REQUIRE_EQ(header_cells[0], a.raw());
