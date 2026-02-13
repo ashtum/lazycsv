@@ -53,6 +53,10 @@ jobs:
             cxxstd: 17,20
             os: ubuntu-24.04
             install: g++-13
+          - compiler: g++-14
+            cxxstd: 17,20,23
+            os: ubuntu-24.04
+            install: g++-14
           - compiler: clang++-6.0
             cxxstd: 17
             os: ubuntu-latest
@@ -115,15 +119,23 @@ jobs:
             cxxstd: 17,20,23
             os: ubuntu-24.04
             install: clang-18
+          - compiler: clang++-19
+            cxxstd: 17,20,23
+            os: ubuntu-24.04
+            install: clang-19
+          - compiler: clang++-20
+            cxxstd: 17,20,23
+            os: ubuntu-24.04
+            install: clang-20
 # macos
-          - compiler: clang++
-            os: macos-13
-            cxxstd: 17,20
           - compiler: clang++
             os: macos-14
             cxxstd: 17,20
           - compiler: clang++
             os: macos-15
+            cxxstd: 17,20,23
+          - compiler: clang++
+            os: macos-26
             cxxstd: 17,20,23
 
     runs-on: ${{matrix.os}}

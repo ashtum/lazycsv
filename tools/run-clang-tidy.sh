@@ -1,1 +1,0 @@
-clang-tidy -header-filter=include.* -p=../build ../test/main.cpp
