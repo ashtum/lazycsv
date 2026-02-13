@@ -14,12 +14,6 @@ target_include_directories(lazycsv INTERFACE include/)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-if(MSVC)
-  add_compile_options(/W4)
-elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-  add_compile_options(-Wall -Wfatal-errors -Wextra -Wnon-virtual-dtor -pedantic)
-endif()
-
 # Install headers
 install(DIRECTORY "${CMAKE_SOURCE_DIR}/include/"
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}

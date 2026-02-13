@@ -1,1 +1,0 @@
-find ../include/ -iname *.hpp -o -iname *.cpp | xargs clang-format -i
